@@ -3,78 +3,111 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { window, Disposable, QuickInput, QuickInputButtons } from 'vscode';
+import {
+	window,
+	Disposable,
+	QuickInput,
+	QuickInputButtons,
+	Uri,
+	QuickPickItem,
+	ExtensionContext,
+} from 'vscode';
 
 /**
  * A multi-step input using window.createQuickPick() and window.createInputBox().
  *
  * This first part uses the helper class `MultiStepInput` that wraps the API for the multi-step case.
+ *
+ * Process: Receives possible list of project URIs.
  */
-export async function multiStepInputNewProject() {
+export async function multiStepInputNewProcess(_context: ExtensionContext) {
 	// TODO: Dynamic by input steparguments
 	const TOTAL_STEPS = 3;
+
+	// TODO: Receive as argument, troubles with the types
+	const DUMMY_PROJECT_URIS: Uri[] = [
+		Uri.parse(
+			'file:///home/dominik/Projects/vscode-extension-multi-step-input/quickinput-sample/src',
+		),
+		Uri.parse(
+			'file:///home/dominik/Projects/vscode-extension-multi-step-input/quickinput-sample/test',
+		),
+	];
+
+	const projectsToPick: ProjectSpec[] = DUMMY_PROJECT_URIS.map((uri) => ({
+		fullUri: uri,
+		label: uri.fsPath.split('/').slice(-1)[0],
+		description: uri.fsPath,
+	}));
 
 	interface State {
 		title: string;
 		step: number;
 		totalSteps: number;
-		projectName: string;
-		groupId: string;
-		projectId: string;
+		project: ProjectSpec;
+		processName: string;
+		processNamespace: string;
 	}
 
 	async function collectInputs() {
 		const state = {} as Partial<State>;
-		await MultiStepInput.run((input) => inputProjectName(input, state));
+		await MultiStepInput.run((input) => pickProjectName(input, state));
 		return state as State;
 	}
 
-	const title = 'Create New Axon Ivy Project'; // TODO: Dynamic by input steparguments
+	const title = 'Create New Axon Ivy Process'; // TODO: Dynamic by input steparguments
 
-	async function inputProjectName(input: MultiStepInput, state: Partial<State>) {
-		state.projectName = await input.showTextInput({
+	async function pickProjectName(input: MultiStepInput, state: Partial<State>) {
+		state.project = await input.showQuickPick({
 			title,
 			step: 1, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
-			value: state.projectName || '', // Show the already chosen name when navigating back.
-			prompt: 'Choose a name for the Axon Ivy Project',
-			validateInputFct: defaultValidateFct,
+			activeItem: state.project, // Show the already chosen pick when navigating back
+			items: projectsToPick,
+			placeholder:
+				"Choose the Axon Ivy Project to create the process in (press 'Enter' to confirm or 'Escape' to cancel)",
 		});
-		return (input: MultiStepInput) => inputGroupId(input, state);
+		return (input: MultiStepInput) => inputProcessName(input, state);
 	}
 
-	async function inputGroupId(input: MultiStepInput, state: Partial<State>) {
-		state.groupId = await input.showTextInput({
+	async function inputProcessName(input: MultiStepInput, state: Partial<State>) {
+		state.processName = await input.showTextInput({
 			title,
 			step: 2, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
-			value: state.groupId || '', // Show the already chosen name when navigating back.
-			prompt: 'Choose a group ID for the Axon Ivy Project (e.g. com.mycompany)',
+			value: state.processName || '', // Show the already chosen name when navigating back.
+			prompt: 'Choose a name for the Axon Ivy Process',
 			validateInputFct: defaultValidateFct,
 		});
-		return (input: MultiStepInput) => inputProjectId(input, state);
+		return (input: MultiStepInput) => inputProcessNamespace(input, state);
 	}
 
-	async function inputProjectId(input: MultiStepInput, state: Partial<State>) {
-		state.projectId = await input.showTextInput({
+	async function inputProcessNamespace(input: MultiStepInput, state: Partial<State>) {
+		state.processNamespace = await input.showTextInput({
 			title,
 			step: 3, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
-			value: state.projectId || '', // Show the already chosen name when navigating back.
-			prompt: 'Choose a project ID for the Axon Ivy Project',
+			value: state.processNamespace || '', // Show the already chosen name when navigating back.
+			prompt: 'Choose a namespace for the Axon Ivy Process (e.g. /my/namespace)',
 			validateInputFct: defaultValidateFct,
 		});
 	}
 
 	const state = await collectInputs();
 	window.showInformationMessage(
-		`Creating Project with name '${state.projectName}' and project ID '${state.projectId}' in group ID '${state.groupId}'`,
+		`Creating Process with name
+		'${state.processName}' and namespace '${state.processNamespace}' in project '${state.project.label}
+		(full URI: ${state.project.fullUri})'`,
 	);
 }
 
 // -------------------------------------------------------
 // Helper code that wraps the API for the multi-step case.
 // -------------------------------------------------------
+
+interface ProjectSpec extends QuickPickItem {
+	fullUri: Uri;
+}
 
 const defaultValidateFct = () =>
 	Promise.resolve({
@@ -101,6 +134,16 @@ interface TextInputParameters {
 	value: string;
 	prompt: string;
 	validateInputFct: (input: string) => Promise<ValidationResult>; // validate against text input, which is string
+	ignoreFocusOut?: boolean;
+	placeholder?: string;
+}
+
+interface QuickPickParameters {
+	title: string;
+	step: number;
+	totalSteps: number;
+	items: ProjectSpec[];
+	activeItem?: ProjectSpec;
 	ignoreFocusOut?: boolean;
 	placeholder?: string;
 }
@@ -187,6 +230,57 @@ class MultiStepInput {
 					reject(InputFlowAction.cancel);
 				}),
 				// No listener for onDidChangeValue, since validation is only triggered when accepting the input
+			);
+			if (this.current) {
+				this.current.dispose();
+			}
+			this.current = input;
+			this.current.show();
+		});
+
+		// Resolve the Promise and clean up the event listeners when the input is accepted or canceled
+		try {
+			return await p;
+		} finally {
+			disposables.forEach((d) => d.dispose());
+		}
+	}
+
+	async showQuickPick({
+		title,
+		step,
+		totalSteps,
+		activeItem,
+		items,
+		ignoreFocusOut,
+		placeholder,
+	}: QuickPickParameters): Promise<ProjectSpec> {
+		const disposables: Disposable[] = [];
+
+		// Create the Promise that is resolved/rejected based on the event listeners
+		const p = new Promise<ProjectSpec>((resolve, reject) => {
+			const input = window.createQuickPick<ProjectSpec>();
+			input.title = title;
+			input.step = step;
+			input.totalSteps = totalSteps;
+			input.ignoreFocusOut = ignoreFocusOut ?? true;
+			input.placeholder = placeholder;
+			input.items = items;
+			if (activeItem) {
+				input.activeItems = [activeItem];
+			}
+			input.buttons = this.steps.length > 1 ? [QuickInputButtons.Back] : [];
+			disposables.push(
+				input.onDidTriggerButton((item) => {
+					// If the back button is pressed. No other buttons are expected.
+					if (item === QuickInputButtons.Back) {
+						reject(InputFlowAction.back);
+					}
+				}),
+				input.onDidChangeSelection((items) => resolve(items[0])),
+				input.onDidHide(() => {
+					reject(InputFlowAction.cancel);
+				}),
 			);
 			this.current?.dispose();
 			this.current = input;
