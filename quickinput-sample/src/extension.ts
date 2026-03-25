@@ -6,6 +6,7 @@
 import { window, commands, ExtensionContext } from 'vscode';
 import { showQuickPick, showInputBox } from './basicInput';
 import { multiStepInput } from './multiStepInput';
+import { multiStepInputNewProject } from './multiStepInputNewProject';
 import { quickOpen } from './quickOpen';
 
 export function activate(context: ExtensionContext) {
@@ -14,6 +15,7 @@ export function activate(context: ExtensionContext) {
 			showQuickPick,
 			showInputBox,
 			multiStepInput,
+			multiStepInputNewProject,
 			quickOpen,
 		};
 		const quickPick = window.createQuickPick();
