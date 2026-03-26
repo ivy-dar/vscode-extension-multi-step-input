@@ -15,7 +15,7 @@ class InputFlowAction {
 
 export type InputStep<T extends IStateBase> = (
 	input: MultiStepInput<T>,
-	state?: T,
+	state: T,
 ) => Thenable<InputStep<T> | void>;
 
 interface TextInputParameters {
@@ -45,15 +45,15 @@ interface QuickPickParameters<P extends QuickPickItem> {
 
 export class MultiStepInput<T extends IStateBase> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	static async run(start: InputStep<any>) {
+	static async run(start: InputStep<any>, state: any) {
 		const input = new MultiStepInput();
-		return input.stepThrough(start);
+		return input.stepThrough(start, state);
 	}
 
 	private current?: QuickInput;
 	private steps: InputStep<T>[] = [];
 
-	private async stepThrough(start: InputStep<T>) {
+	private async stepThrough(start: InputStep<T>, state: T) {
 		let step: InputStep<T> | void = start;
 		while (step) {
 			this.steps.push(step);
@@ -62,7 +62,7 @@ export class MultiStepInput<T extends IStateBase> {
 				this.current.busy = true;
 			}
 			try {
-				step = await step(this);
+				step = await step(this, state);
 			} catch (err) {
 				if (err === InputFlowAction.back) {
 					this.steps.pop();
@@ -172,6 +172,8 @@ export class MultiStepInput<T extends IStateBase> {
 			input.items = items;
 			if (activeItem) {
 				input.activeItems = [activeItem];
+				input.selectedItems = [activeItem];
+				input.value = activeItem.label;
 			}
 			input.buttons = this.steps.length > 1 ? [QuickInputButtons.Back] : [];
 			disposables.push(
@@ -205,7 +207,7 @@ export async function createMultiStepInputGeneric<T extends IStateBase>(
 	initFunction: InputStep<T>,
 ): Promise<void> {
 	async function collectInputs() {
-		await MultiStepInput.run((input) => initFunction(input, state));
+		await MultiStepInput.run((input) => initFunction(input, state), state);
 		return state;
 	}
 

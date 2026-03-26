@@ -7,40 +7,11 @@ import {
 	createMultiStepInputGeneric,
 } from './multiStepInputGenerics';
 
-const stepNames: string[] = [
-	'Step 1 Initial Text',
-	'Step 2 Initial Text',
-	'Step 3 Initial Pick',
-];
-
-interface IMyState extends IStateBase {
-	stepOneText: string;
-	stepTwoText: string;
-	stepThreePick: QuickPickItem;
-}
-
-const myState: IMyState = {
-	dialogTitle: 'Example Dialog Generics',
-	currentStep: -1,
-	totalSteps: stepNames.length,
-	stepOneText: stepNames[0],
-	stepTwoText: stepNames[1],
-	stepThreePick: { label: stepNames[2] },
-};
-
 const stepFunctionOne: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
-	state?: IMyState,
+	state: IMyState,
 ) => {
-	if (state === undefined) {
-		throw new Error('state must not be undefined');
-	}
-
-	console.log('Step Function One');
-	console.log('State in Step Function One BEFORE mutation', state);
-	state.currentStep = 1;
-	console.log('State in Step Function One AFTER mutation', state);
-
+	state.currentStep = 1; // TODO: Dynamic by input steparguments
 	state.stepOneText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step One',
@@ -56,19 +27,9 @@ const stepFunctionOne: InputStep<IMyState> = async (
 
 const stepFunctionTwo: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
-	state?: IMyState,
+	state: IMyState,
 ) => {
-	if (state === undefined) {
-		throw new Error('state must not be undefined');
-	}
-
-	console.log('Step Function Two');
-	console.log('State in Step Function Two BEFORE mutation', state);
-	if (state) {
-		state.currentStep = 2;
-	}
-	console.log('State in Step Function Two AFTER mutation', state);
-
+	state.currentStep = 2; // TODO: Dynamic by input steparguments
 	state.stepTwoText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Two',
@@ -87,19 +48,9 @@ const stepFunctionTwo: InputStep<IMyState> = async (
 
 const stepFunctionThree: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
-	state?: IMyState,
+	state: IMyState,
 ) => {
-	if (state === undefined) {
-		throw new Error('state must not be undefined');
-	}
-
-	console.log('Step Function Three');
-	console.log('State in Step Function Three BEFORE mutation', state);
-	if (state) {
-		state.currentStep = 3;
-	}
-	console.log('State in Step Function Three AFTER mutation', state);
-
+	state.currentStep = 3; // TODO: Dynamic by input steparguments
 	state.stepThreePick = await input.showQuickPick({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Three',
@@ -111,13 +62,59 @@ const stepFunctionThree: InputStep<IMyState> = async (
 			{ label: 'Option 2', description: 'Description 2' },
 			{ label: 'Option 3', description: 'Description 3' },
 		],
-		onBack: (typedValue) => {
-			state.stepThreePick = typedValue;
+		onBack: (pickedValue) => {
+			state.stepThreePick = pickedValue;
 		},
 		placeholder: 'Choose an option for step 3',
 	});
+
+	return (input) => stepFunctionFour(input, state);
+};
+
+const stepFunctionFour: InputStep<IMyState> = async (
+	input: MultiStepInput<IMyState>,
+	state: IMyState,
+) => {
+	state.currentStep = 4; // TODO: Dynamic by input steparguments
+	state.stepFourText = await input.showTextInput({
+		title: state.dialogTitle,
+		titleSuffix: ' - Step Four',
+		step: state.currentStep, // TODO: Dynamic by input steparguments
+		totalSteps: state.totalSteps,
+		value: state.stepFourText,
+		prompt: 'Enter text for step 4',
+		validateInputFct: validateNotEmptyNoWhitespace,
+		onBack: (typedValue) => {
+			state.stepFourText = typedValue;
+		},
+	});
+};
+
+// Ordered list of steps
+const steps: [string, InputStep<IMyState>][] = [
+	['Step 1 Initial Text', stepFunctionOne],
+	['Step 2 Initial Text', stepFunctionTwo],
+	['Step 3 Initial Pick', stepFunctionThree],
+	['Step 4 Initial Text', stepFunctionFour],
+];
+
+interface IMyState extends IStateBase {
+	stepOneText: string;
+	stepTwoText: string;
+	stepThreePick: QuickPickItem;
+	stepFourText: string;
+}
+
+const myState: IMyState = {
+	dialogTitle: 'Example Dialog Generics',
+	currentStep: -1,
+	totalSteps: steps.length,
+	stepOneText: steps[0][0],
+	stepTwoText: steps[1][0],
+	stepThreePick: { label: steps[2][0] },
+	stepFourText: steps[3][0],
 };
 
 export async function wrapper() {
-	createMultiStepInputGeneric(myState, stepFunctionOne);
+	createMultiStepInputGeneric(myState, steps[0][1]);
 }
