@@ -1,11 +1,11 @@
 import { window, Disposable, QuickInput, QuickInputButtons, QuickPickItem } from 'vscode';
 import { ValidationFunction, ValidationResult } from '../utils/validators';
 
-export interface IStateBase {
+export interface IStateBase<P extends QuickPickItem = QuickPickItem> {
 	dialogTitle: string;
 	currentStep: number;
 	totalSteps: number;
-	[key: string]: string | number;
+	[key: string]: string | number | P;
 }
 
 class InputFlowAction {
@@ -37,6 +37,7 @@ interface QuickPickParameters<P extends QuickPickItem> {
 	step: number;
 	totalSteps: number;
 	items: P[];
+	onBack?: (typedValue: P) => void;
 	activeItem?: P;
 	ignoreFocusOut?: boolean;
 	placeholder?: string;
