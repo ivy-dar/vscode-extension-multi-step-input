@@ -16,9 +16,6 @@
 	"categories": [
 		"Other"
 	],
-	"activationEvents": [
-		"onCommand:samples.quickInput"
-	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
@@ -29,6 +26,10 @@
 			{
 				"command": "samples.multiStepInputNewProcess",
 				"title": "New Process Example"
+			},
+			{
+				"command": "samples.multiStepInputGeneric",
+				"title": "Generic Multi-Step Input Example"
 			}
 		]
 	},

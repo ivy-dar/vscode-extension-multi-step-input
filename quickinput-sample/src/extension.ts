@@ -6,6 +6,7 @@
 import { commands, ExtensionContext } from 'vscode';
 import { multiStepInputNewProject } from './multiStepInputNewProject';
 import { multiStepInputNewProcess } from './multiStepInputNewProcess';
+import { wrapper } from './generic/multiStepInputGenericUsage';
 
 export function activate(context: ExtensionContext) {
 	context.subscriptions.push(
@@ -14,6 +15,9 @@ export function activate(context: ExtensionContext) {
 		}),
 		commands.registerCommand('samples.multiStepInputNewProcess', () => {
 			multiStepInputNewProcess();
+		}),
+		commands.registerCommand('samples.multiStepInputGeneric', () => {
+			wrapper();
 		}),
 	);
 }
