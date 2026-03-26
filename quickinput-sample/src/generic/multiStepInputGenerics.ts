@@ -205,6 +205,7 @@ export async function createMultiStepInputGeneric<T extends IStateBase>(
 ): Promise<void> {
 	async function collectInputs() {
 		await MultiStepInput.run((input) => initFunction(input, state));
+		return state;
 	}
 
 	const finalState = await collectInputs();
