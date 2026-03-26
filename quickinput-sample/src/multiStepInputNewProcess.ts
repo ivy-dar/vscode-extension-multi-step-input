@@ -12,6 +12,12 @@ import {
 	QuickPickItem,
 	ExtensionContext,
 } from 'vscode';
+import {
+	validateNotEmpty,
+	validateDotSeparatedName,
+	ValidationFunction,
+	ValidationResult,
+} from './utils/validators';
 
 /**
  * A multi-step input using window.createQuickPick() and window.createInputBox().
@@ -77,7 +83,7 @@ export async function multiStepInputNewProcess(_context: ExtensionContext) {
 			totalSteps: TOTAL_STEPS,
 			value: state.processName || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a name for the Axon Ivy Process',
-			validateInputFct: defaultValidateFct,
+			validateInputFct: validateNotEmpty,
 			onBack: (typedValue) => {
 				state.processName = typedValue;
 			},
@@ -92,7 +98,7 @@ export async function multiStepInputNewProcess(_context: ExtensionContext) {
 			totalSteps: TOTAL_STEPS,
 			value: state.processNamespace || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a namespace for the Axon Ivy Process (e.g. /my/namespace)',
-			validateInputFct: defaultValidateFct,
+			validateInputFct: validateDotSeparatedName,
 			onBack: (typedValue) => {
 				state.processNamespace = typedValue;
 			},
@@ -115,17 +121,6 @@ interface ProjectSpec extends QuickPickItem {
 	fullUri: Uri;
 }
 
-const defaultValidateFct = () =>
-	Promise.resolve({
-		isValid: true,
-		validationMessage: 'defaultValidateFct is always true',
-	});
-
-interface ValidationResult {
-	isValid: boolean;
-	validationMessage?: string;
-}
-
 class InputFlowAction {
 	static back = new InputFlowAction();
 	static cancel = new InputFlowAction();
@@ -139,7 +134,7 @@ interface TextInputParameters {
 	totalSteps: number;
 	value: string;
 	prompt: string;
-	validateInputFct: (input: string) => Promise<ValidationResult>; // validate against text input, which is string
+	validateInputFct: ValidationFunction;
 	onBack?: (typedValue: string) => void;
 	ignoreFocusOut?: boolean;
 	placeholder?: string;
@@ -225,9 +220,12 @@ class MultiStepInput {
 				input.onDidAccept(async () => {
 					input.enabled = false;
 					input.busy = true;
-					const validationResult = await validateInputFct(input.value);
+					const validationResult: ValidationResult = validateInputFct(
+						input.value,
+					);
 					if (!validationResult.isValid) {
-						reject(validationResult.validationMessage);
+						input.validationMessage =
+							validationResult.errorMessage ?? 'Invalid input';
 					} else {
 						resolve(input.value);
 					}

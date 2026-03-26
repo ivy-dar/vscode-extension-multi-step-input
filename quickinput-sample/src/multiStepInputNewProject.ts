@@ -4,6 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { window, Disposable, QuickInput, QuickInputButtons } from 'vscode';
+import {
+	validateNotEmpty,
+	validateDotSeparatedName,
+	ValidationFunction,
+	ValidationResult,
+} from './utils/validators';
 
 /**
  * A multi-step input using window.createQuickPick() and window.createInputBox().
@@ -38,7 +44,10 @@ export async function multiStepInputNewProject() {
 			totalSteps: TOTAL_STEPS,
 			value: state.projectName || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a name for the Axon Ivy Project',
-			validateInputFct: defaultValidateFct,
+			validateInputFct: validateNotEmpty,
+			onBack: (typedValue) => {
+				state.projectName = typedValue;
+			},
 		});
 		return (input: MultiStepInput) => inputGroupId(input, state);
 	}
@@ -50,7 +59,10 @@ export async function multiStepInputNewProject() {
 			totalSteps: TOTAL_STEPS,
 			value: state.groupId || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a group ID for the Axon Ivy Project (e.g. com.mycompany)',
-			validateInputFct: defaultValidateFct,
+			validateInputFct: validateDotSeparatedName,
+			onBack: (typedValue) => {
+				state.groupId = typedValue;
+			},
 		});
 		return (input: MultiStepInput) => inputProjectId(input, state);
 	}
@@ -62,7 +74,10 @@ export async function multiStepInputNewProject() {
 			totalSteps: TOTAL_STEPS,
 			value: state.projectId || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a project ID for the Axon Ivy Project',
-			validateInputFct: defaultValidateFct,
+			validateInputFct: validateDotSeparatedName,
+			onBack: (typedValue) => {
+				state.projectId = typedValue;
+			},
 		});
 	}
 
@@ -75,17 +90,6 @@ export async function multiStepInputNewProject() {
 // -------------------------------------------------------
 // Helper code that wraps the API for the multi-step case.
 // -------------------------------------------------------
-
-const defaultValidateFct = () =>
-	Promise.resolve({
-		isValid: true,
-		validationMessage: 'defaultValidateFct is always true',
-	});
-
-interface ValidationResult {
-	isValid: boolean;
-	validationMessage?: string;
-}
 
 class InputFlowAction {
 	static back = new InputFlowAction();
@@ -100,7 +104,8 @@ interface TextInputParameters {
 	totalSteps: number;
 	value: string;
 	prompt: string;
-	validateInputFct: (input: string) => Promise<ValidationResult>; // validate against text input, which is string
+	validateInputFct: ValidationFunction;
+	onBack?: (typedValue: string) => void;
 	ignoreFocusOut?: boolean;
 	placeholder?: string;
 }
@@ -147,6 +152,7 @@ class MultiStepInput {
 		value,
 		prompt,
 		validateInputFct,
+		onBack,
 		ignoreFocusOut,
 		placeholder,
 	}: TextInputParameters): Promise<string> {
@@ -167,18 +173,21 @@ class MultiStepInput {
 				input.onDidTriggerButton((item) => {
 					// If the back button is pressed. No other buttons are expected.
 					if (item === QuickInputButtons.Back) {
+						onBack?.(input.value);
 						reject(InputFlowAction.back);
 					}
 				}),
 				input.onDidAccept(async () => {
-					const value = input.value;
 					input.enabled = false;
 					input.busy = true;
-					const validationResult = await validateInputFct(value);
+					const validationResult: ValidationResult = validateInputFct(
+						input.value,
+					);
 					if (!validationResult.isValid) {
-						reject(validationResult.validationMessage);
+						input.validationMessage =
+							validationResult.errorMessage ?? 'Invalid input';
 					} else {
-						resolve(value);
+						resolve(input.value);
 					}
 					input.enabled = true;
 					input.busy = false;
