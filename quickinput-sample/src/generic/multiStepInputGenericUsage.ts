@@ -11,6 +11,7 @@ const stepFunctionOne: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
+	state.currentStep = 1; // TODO: Dynamic by input steparguments
 	state.stepOneText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step One',
@@ -28,6 +29,7 @@ const stepFunctionTwo: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
+	state.currentStep = 2; // TODO: Dynamic by input steparguments
 	state.stepTwoText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Two',
@@ -48,8 +50,7 @@ const stepFunctionThree: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
-	console.log('State START step three', state);
-
+	state.currentStep = 3; // TODO: Dynamic by input steparguments
 	state.stepThreePick = await input.showQuickPick({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Three',
@@ -67,8 +68,6 @@ const stepFunctionThree: InputStep<IMyState> = async (
 		placeholder: 'Choose an option for step 3',
 	});
 
-	console.log('State AFTER step three', state);
-
 	return (input) => stepFunctionFour(input, state);
 };
 
@@ -76,6 +75,7 @@ const stepFunctionFour: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
+	state.currentStep = 4; // TODO: Dynamic by input steparguments
 	state.stepFourText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Four',
