@@ -78,6 +78,9 @@ export async function multiStepInputNewProcess(_context: ExtensionContext) {
 			value: state.processName || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a name for the Axon Ivy Process',
 			validateInputFct: defaultValidateFct,
+			onBack: (typedValue) => {
+				state.processName = typedValue;
+			},
 		});
 		return (input: MultiStepInput) => inputProcessNamespace(input, state);
 	}
@@ -90,6 +93,9 @@ export async function multiStepInputNewProcess(_context: ExtensionContext) {
 			value: state.processNamespace || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a namespace for the Axon Ivy Process (e.g. /my/namespace)',
 			validateInputFct: defaultValidateFct,
+			onBack: (typedValue) => {
+				state.processNamespace = typedValue;
+			},
 		});
 	}
 
@@ -134,6 +140,7 @@ interface TextInputParameters {
 	value: string;
 	prompt: string;
 	validateInputFct: (input: string) => Promise<ValidationResult>; // validate against text input, which is string
+	onBack?: (typedValue: string) => void;
 	ignoreFocusOut?: boolean;
 	placeholder?: string;
 }
@@ -190,6 +197,7 @@ class MultiStepInput {
 		value,
 		prompt,
 		validateInputFct,
+		onBack,
 		ignoreFocusOut,
 		placeholder,
 	}: TextInputParameters): Promise<string> {
@@ -210,18 +218,18 @@ class MultiStepInput {
 				input.onDidTriggerButton((item) => {
 					// If the back button is pressed. No other buttons are expected.
 					if (item === QuickInputButtons.Back) {
+						onBack?.(input.value);
 						reject(InputFlowAction.back);
 					}
 				}),
 				input.onDidAccept(async () => {
-					const value = input.value;
 					input.enabled = false;
 					input.busy = true;
-					const validationResult = await validateInputFct(value);
+					const validationResult = await validateInputFct(input.value);
 					if (!validationResult.isValid) {
 						reject(validationResult.validationMessage);
 					} else {
-						resolve(value);
+						resolve(input.value);
 					}
 					input.enabled = true;
 					input.busy = false;
