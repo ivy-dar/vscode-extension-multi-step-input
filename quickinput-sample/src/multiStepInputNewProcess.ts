@@ -10,10 +10,9 @@ import {
 	QuickInputButtons,
 	Uri,
 	QuickPickItem,
-	ExtensionContext,
 } from 'vscode';
 import {
-	validateNotEmpty,
+	validateNotEmptyNoWhitespace,
 	validateDotSeparatedName,
 	ValidationFunction,
 	ValidationResult,
@@ -26,7 +25,7 @@ import {
  *
  * Process: Receives possible list of project URIs.
  */
-export async function multiStepInputNewProcess(_context: ExtensionContext) {
+export async function multiStepInputNewProcess() {
 	// TODO: Dynamic by input steparguments
 	const TOTAL_STEPS = 3;
 
@@ -66,6 +65,7 @@ export async function multiStepInputNewProcess(_context: ExtensionContext) {
 	async function pickProjectName(input: MultiStepInput, state: Partial<State>) {
 		state.project = await input.showQuickPick({
 			title,
+			titleSuffix: ' - Project',
 			step: 1, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
 			activeItem: state.project, // Show the already chosen pick when navigating back
@@ -79,11 +79,12 @@ export async function multiStepInputNewProcess(_context: ExtensionContext) {
 	async function inputProcessName(input: MultiStepInput, state: Partial<State>) {
 		state.processName = await input.showTextInput({
 			title,
+			titleSuffix: ' - Process Name',
 			step: 2, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
 			value: state.processName || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a name for the Axon Ivy Process',
-			validateInputFct: validateNotEmpty,
+			validateInputFct: validateNotEmptyNoWhitespace,
 			onBack: (typedValue) => {
 				state.processName = typedValue;
 			},
@@ -94,6 +95,7 @@ export async function multiStepInputNewProcess(_context: ExtensionContext) {
 	async function inputProcessNamespace(input: MultiStepInput, state: Partial<State>) {
 		state.processNamespace = await input.showTextInput({
 			title,
+			titleSuffix: ' - Process Namespace',
 			step: 3, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
 			value: state.processNamespace || '', // Show the already chosen name when navigating back.
@@ -130,6 +132,7 @@ type InputStep = (input: MultiStepInput) => Thenable<InputStep | void>;
 
 interface TextInputParameters {
 	title: string;
+	titleSuffix?: string;
 	step: number;
 	totalSteps: number;
 	value: string;
@@ -142,6 +145,7 @@ interface TextInputParameters {
 
 interface QuickPickParameters {
 	title: string;
+	titleSuffix?: string;
 	step: number;
 	totalSteps: number;
 	items: ProjectSpec[];
@@ -187,6 +191,7 @@ class MultiStepInput {
 
 	async showTextInput({
 		title,
+		titleSuffix,
 		step,
 		totalSteps,
 		value,
@@ -201,7 +206,7 @@ class MultiStepInput {
 		// Create the Promise that is resolved/rejected based on the event listeners
 		const p = new Promise<string>((resolve, reject) => {
 			const input = window.createInputBox();
-			input.title = title;
+			input.title = title + (titleSuffix ?? '');
 			input.step = step;
 			input.totalSteps = totalSteps;
 			input.value = value || '';
@@ -235,7 +240,9 @@ class MultiStepInput {
 				input.onDidHide(() => {
 					reject(InputFlowAction.cancel);
 				}),
-				// No listener for onDidChangeValue, since validation is only triggered when accepting the input
+				input.onDidChangeValue(async () => {
+					input.validationMessage = undefined;
+				}),
 			);
 			if (this.current) {
 				this.current.dispose();
@@ -254,6 +261,7 @@ class MultiStepInput {
 
 	async showQuickPick({
 		title,
+		titleSuffix,
 		step,
 		totalSteps,
 		activeItem,
@@ -266,7 +274,7 @@ class MultiStepInput {
 		// Create the Promise that is resolved/rejected based on the event listeners
 		const p = new Promise<ProjectSpec>((resolve, reject) => {
 			const input = window.createQuickPick<ProjectSpec>();
-			input.title = title;
+			input.title = title + (titleSuffix ?? '');
 			input.step = step;
 			input.totalSteps = totalSteps;
 			input.ignoreFocusOut = ignoreFocusOut ?? true;

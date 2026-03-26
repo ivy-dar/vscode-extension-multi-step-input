@@ -23,8 +23,12 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "samples.quickInput",
-				"title": "Quick Input Samples"
+				"command": "samples.multiStepInputNewProject",
+				"title": "New Project Example"
+			},
+			{
+				"command": "samples.multiStepInputNewProcess",
+				"title": "New Process Example"
 			}
 		]
 	},

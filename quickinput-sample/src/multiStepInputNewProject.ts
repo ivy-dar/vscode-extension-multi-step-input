@@ -5,7 +5,7 @@
 
 import { window, Disposable, QuickInput, QuickInputButtons } from 'vscode';
 import {
-	validateNotEmpty,
+	validateNotEmptyNoWhitespace,
 	validateDotSeparatedName,
 	ValidationFunction,
 	ValidationResult,
@@ -40,11 +40,12 @@ export async function multiStepInputNewProject() {
 	async function inputProjectName(input: MultiStepInput, state: Partial<State>) {
 		state.projectName = await input.showTextInput({
 			title,
+			titleSuffix: ' - Project Name',
 			step: 1, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
 			value: state.projectName || '', // Show the already chosen name when navigating back.
 			prompt: 'Choose a name for the Axon Ivy Project',
-			validateInputFct: validateNotEmpty,
+			validateInputFct: validateNotEmptyNoWhitespace,
 			onBack: (typedValue) => {
 				state.projectName = typedValue;
 			},
@@ -55,6 +56,7 @@ export async function multiStepInputNewProject() {
 	async function inputGroupId(input: MultiStepInput, state: Partial<State>) {
 		state.groupId = await input.showTextInput({
 			title,
+			titleSuffix: ' - Group ID',
 			step: 2, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
 			value: state.groupId || '', // Show the already chosen name when navigating back.
@@ -70,6 +72,7 @@ export async function multiStepInputNewProject() {
 	async function inputProjectId(input: MultiStepInput, state: Partial<State>) {
 		state.projectId = await input.showTextInput({
 			title,
+			titleSuffix: ' - Project ID',
 			step: 3, // TODO: Dynamic by input steparguments
 			totalSteps: TOTAL_STEPS,
 			value: state.projectId || '', // Show the already chosen name when navigating back.
@@ -100,6 +103,7 @@ type InputStep = (input: MultiStepInput) => Thenable<InputStep | void>;
 
 interface TextInputParameters {
 	title: string;
+	titleSuffix?: string;
 	step: number;
 	totalSteps: number;
 	value: string;
@@ -147,6 +151,7 @@ class MultiStepInput {
 
 	async showTextInput({
 		title,
+		titleSuffix,
 		step,
 		totalSteps,
 		value,
@@ -161,7 +166,7 @@ class MultiStepInput {
 		// Create the Promise that is resolved/rejected based on the event listeners
 		const p = new Promise<string>((resolve, reject) => {
 			const input = window.createInputBox();
-			input.title = title;
+			input.title = title + (titleSuffix ?? '');
 			input.step = step;
 			input.totalSteps = totalSteps;
 			input.value = value || '';
@@ -195,7 +200,9 @@ class MultiStepInput {
 				input.onDidHide(() => {
 					reject(InputFlowAction.cancel);
 				}),
-				// No listener for onDidChangeValue, since validation is only triggered when accepting the input
+				input.onDidChangeValue(async () => {
+					input.validationMessage = undefined;
+				}),
 			);
 			this.current?.dispose();
 			this.current = input;

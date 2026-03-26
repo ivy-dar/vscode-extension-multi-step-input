@@ -12,11 +12,12 @@ export const defaultValidateFct: ValidationFunction = () => {
 	};
 };
 
-export const validateNotEmpty: ValidationFunction = (
+export const validateNotEmptyNoWhitespace: ValidationFunction = (
 	input,
-	errorMessage = 'This field cannot be empty',
+	errorMessage = 'This field cannot be empty and must not contain leading or trailing whitespace.',
 ) => {
-	if (input.trim().length === 0) {
+	const input_trimmed = input.trim();
+	if (input_trimmed.length === 0 || input_trimmed.length !== input.length) {
 		return {
 			isValid: false,
 			errorMessage: errorMessage,
