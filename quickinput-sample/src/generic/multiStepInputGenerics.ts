@@ -44,16 +44,10 @@ interface QuickPickParameters<P extends QuickPickItem> {
 }
 
 export class MultiStepInput<T extends IStateBase> {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	static async run(start: InputStep<any>, state: any) {
-		const input = new MultiStepInput();
-		return input.stepThrough(start, state);
-	}
-
 	private current?: QuickInput;
 	private steps: InputStep<T>[] = [];
 
-	private async stepThrough(start: InputStep<T>, state: T) {
+	async stepThrough(start: InputStep<T>, state: T) {
 		let step: InputStep<T> | void = start;
 		while (step) {
 			this.steps.push(step);
@@ -206,13 +200,9 @@ export async function createMultiStepInputGeneric<T extends IStateBase>(
 	state: T,
 	initFunction: InputStep<T>,
 ): Promise<void> {
-	async function collectInputs() {
-		await MultiStepInput.run((input) => initFunction(input, state), state);
-		return state;
-	}
-
-	const finalState = await collectInputs();
+	const input = new MultiStepInput<T>();
+	await input.stepThrough(initFunction, state);
 	window.showInformationMessage(
-		`All steps completed! Final state: ${JSON.stringify(finalState)}`,
+		`All steps completed! Final state: ${JSON.stringify(state)}`,
 	);
 }
