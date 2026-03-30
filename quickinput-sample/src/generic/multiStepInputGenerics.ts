@@ -57,8 +57,10 @@ export class MultiStepInput<T extends IStateBase> {
 			}
 			try {
 				step = await step(this, state);
+				state.currentStep++;
 			} catch (err) {
 				if (err === InputFlowAction.back) {
+					state.currentStep--;
 					this.steps.pop();
 					step = this.steps.pop();
 				} else if (err === InputFlowAction.cancel) {
@@ -200,6 +202,7 @@ export async function createMultiStepInputGeneric<T extends IStateBase>(
 	state: T,
 	initFunction: InputStep<T>,
 ): Promise<void> {
+	state.currentStep = 1;
 	const input = new MultiStepInput<T>();
 	await input.stepThrough(initFunction, state);
 	window.showInformationMessage(

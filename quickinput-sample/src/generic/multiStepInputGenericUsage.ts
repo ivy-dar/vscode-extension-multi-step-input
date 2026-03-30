@@ -11,7 +11,6 @@ const stepFunctionOne: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
-	state.currentStep = 1; // TODO: Dynamic by input steparguments
 	state.stepOneText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step One',
@@ -29,7 +28,6 @@ const stepFunctionTwo: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
-	state.currentStep = 2; // TODO: Dynamic by input steparguments
 	state.stepTwoText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Two',
@@ -50,7 +48,6 @@ const stepFunctionThree: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
-	state.currentStep = 3; // TODO: Dynamic by input steparguments
 	state.stepThreePick = await input.showQuickPick({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Three',
@@ -75,7 +72,6 @@ const stepFunctionFour: InputStep<IMyState> = async (
 	input: MultiStepInput<IMyState>,
 	state: IMyState,
 ) => {
-	state.currentStep = 4; // TODO: Dynamic by input steparguments
 	state.stepFourText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Four',
@@ -105,16 +101,15 @@ interface IMyState extends IStateBase {
 	stepFourText: string;
 }
 
-const myState: IMyState = {
-	dialogTitle: 'Example Dialog Generics',
-	currentStep: -1,
-	totalSteps: steps.length,
-	stepOneText: steps[0][0],
-	stepTwoText: steps[1][0],
-	stepThreePick: { label: steps[2][0] },
-	stepFourText: steps[3][0],
-};
-
 export async function wrapper() {
+	const myState: IMyState = {
+		dialogTitle: 'Example Dialog Generics',
+		currentStep: -1,
+		totalSteps: steps.length,
+		stepOneText: steps[0][0],
+		stepTwoText: steps[1][0],
+		stepThreePick: { label: steps[2][0] },
+		stepFourText: steps[3][0],
+	};
 	createMultiStepInputGeneric(myState, steps[0][1]);
 }
