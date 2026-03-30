@@ -14,10 +14,11 @@ const stepFunctionOne: InputStep<IMyState> = async (
 	state.stepOneText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step One',
-		step: state.currentStep, // TODO: Dynamic by input steparguments
+		step: state.currentStep,
 		totalSteps: state.totalSteps,
 		value: state.stepOneText,
 		prompt: 'Enter text for step 1',
+		placeholder: 'Placeholder for step 1',
 		validateInputFct: validateNotEmptyNoWhitespace,
 	});
 
@@ -31,10 +32,11 @@ const stepFunctionTwo: InputStep<IMyState> = async (
 	state.stepTwoText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Two',
-		step: state.currentStep, // TODO: Dynamic by input steparguments
+		step: state.currentStep,
 		totalSteps: state.totalSteps,
 		value: state.stepTwoText,
 		prompt: 'Enter text for step 2',
+		placeholder: 'Placeholder for step 2',
 		validateInputFct: validateNotEmptyNoWhitespace,
 		onBack: (typedValue) => {
 			state.stepTwoText = typedValue;
@@ -51,9 +53,10 @@ const stepFunctionThree: InputStep<IMyState> = async (
 	state.stepThreePick = await input.showQuickPick({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Three',
-		step: state.currentStep, // TODO: Dynamic by input steparguments
+		step: state.currentStep,
 		totalSteps: state.totalSteps,
 		activeItem: state.stepThreePick,
+		placeholder: 'Choose an option for step 3',
 		items: [
 			{ label: 'Option 1', description: 'Description 1' },
 			{ label: 'Option 2', description: 'Description 2' },
@@ -62,7 +65,6 @@ const stepFunctionThree: InputStep<IMyState> = async (
 		onBack: (pickedValue) => {
 			state.stepThreePick = pickedValue;
 		},
-		placeholder: 'Choose an option for step 3',
 	});
 
 	return (input) => stepFunctionFour(input, state);
@@ -75,10 +77,11 @@ const stepFunctionFour: InputStep<IMyState> = async (
 	state.stepFourText = await input.showTextInput({
 		title: state.dialogTitle,
 		titleSuffix: ' - Step Four',
-		step: state.currentStep, // TODO: Dynamic by input steparguments
+		step: state.currentStep,
 		totalSteps: state.totalSteps,
 		value: state.stepFourText,
 		prompt: 'Enter text for step 4',
+		placeholder: 'Placeholder for step 4',
 		validateInputFct: validateNotEmptyNoWhitespace,
 		onBack: (typedValue) => {
 			state.stepFourText = typedValue;
@@ -86,12 +89,15 @@ const stepFunctionFour: InputStep<IMyState> = async (
 	});
 };
 
-// Ordered list of steps
-const steps: [string, InputStep<IMyState>][] = [
-	['Step 1 Initial Text', stepFunctionOne],
-	['Step 2 Initial Text', stepFunctionTwo],
-	['Step 3 Initial Pick', stepFunctionThree],
-	['Step 4 Initial Text', stepFunctionFour],
+// Define the entrypoint, the initial funciton to call
+const initialFunction: InputStep<IMyState> = stepFunctionOne;
+
+// Ordered list of step initial texts
+const steps: string[] = [
+	'Step 1 Initial Text',
+	'Step 2 Initial Text',
+	'',
+	'Step 4 Initial Text',
 ];
 
 interface IMyState extends IStateBase {
@@ -106,10 +112,10 @@ export async function wrapper() {
 		dialogTitle: 'Example Dialog Generics',
 		currentStep: -1,
 		totalSteps: steps.length,
-		stepOneText: steps[0][0],
-		stepTwoText: steps[1][0],
-		stepThreePick: { label: steps[2][0] },
-		stepFourText: steps[3][0],
+		stepOneText: steps[0],
+		stepTwoText: steps[1],
+		stepThreePick: { label: steps[2] },
+		stepFourText: steps[3],
 	};
-	createMultiStepInputGeneric(myState, steps[0][1]);
+	createMultiStepInputGeneric(myState, initialFunction);
 }

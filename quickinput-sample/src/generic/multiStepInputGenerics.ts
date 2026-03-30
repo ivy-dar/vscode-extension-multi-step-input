@@ -5,7 +5,7 @@ export interface IStateBase<P extends QuickPickItem = QuickPickItem> {
 	dialogTitle: string;
 	currentStep: number;
 	totalSteps: number;
-	[key: string]: string | number | P;
+	[key: string]: string | number | P | undefined;
 }
 
 class InputFlowAction {
@@ -23,12 +23,12 @@ interface TextInputParameters {
 	titleSuffix?: string;
 	step: number;
 	totalSteps: number;
-	value: string;
-	prompt: string;
-	validateInputFct: ValidationFunction;
+	value?: string;
+	prompt?: string;
+	placeholder?: string;
+	validateInputFct?: ValidationFunction;
 	onBack?: (typedValue: string) => void;
 	ignoreFocusOut?: boolean;
-	placeholder?: string;
 }
 
 interface QuickPickParameters<P extends QuickPickItem> {
@@ -37,10 +37,10 @@ interface QuickPickParameters<P extends QuickPickItem> {
 	step: number;
 	totalSteps: number;
 	items: P[];
-	onBack?: (typedValue: P) => void;
 	activeItem?: P;
-	ignoreFocusOut?: boolean;
 	placeholder?: string;
+	onBack?: (typedValue: P) => void;
+	ignoreFocusOut?: boolean;
 }
 
 export class MultiStepInput<T extends IStateBase> {
@@ -95,10 +95,10 @@ export class MultiStepInput<T extends IStateBase> {
 			input.title = title + (titleSuffix ?? '');
 			input.step = step;
 			input.totalSteps = totalSteps;
-			input.value = value || '';
-			input.prompt = prompt;
+			input.value = value ?? '';
+			input.prompt = prompt ?? '';
+			input.placeholder = placeholder ?? '';
 			input.ignoreFocusOut = ignoreFocusOut ?? true;
-			input.placeholder = placeholder;
 			input.buttons = this.steps.length > 1 ? [QuickInputButtons.Back] : [];
 			disposables.push(
 				input.onDidTriggerButton((item) => {
@@ -111,9 +111,9 @@ export class MultiStepInput<T extends IStateBase> {
 				input.onDidAccept(async () => {
 					input.enabled = false;
 					input.busy = true;
-					const validationResult: ValidationResult = validateInputFct(
-						input.value,
-					);
+					const validationResult: ValidationResult = validateInputFct
+						? validateInputFct(input.value)
+						: { isValid: true };
 					if (!validationResult.isValid) {
 						input.validationMessage =
 							validationResult.errorMessage ?? 'Invalid input';
@@ -137,7 +137,6 @@ export class MultiStepInput<T extends IStateBase> {
 			this.current.show();
 		});
 
-		// Resolve the Promise and clean up the event listeners when the input is accepted or canceled
 		try {
 			return await p;
 		} finally {
@@ -164,7 +163,7 @@ export class MultiStepInput<T extends IStateBase> {
 			input.step = step;
 			input.totalSteps = totalSteps;
 			input.ignoreFocusOut = ignoreFocusOut ?? true;
-			input.placeholder = placeholder;
+			input.placeholder = placeholder ?? '';
 			input.items = items;
 			if (activeItem) {
 				input.activeItems = [activeItem];
@@ -189,7 +188,6 @@ export class MultiStepInput<T extends IStateBase> {
 			this.current.show();
 		});
 
-		// Resolve the Promise and clean up the event listeners when the input is accepted or canceled
 		try {
 			return await p;
 		} finally {
