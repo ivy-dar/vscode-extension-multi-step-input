@@ -21,8 +21,6 @@ const stepFunctionOne: InputStep<IMyState> = async (
 		placeholder: 'Placeholder for step 1',
 		validateInputFct: validateNotEmptyNoWhitespace,
 	});
-
-	return (input) => stepFunctionTwo(input, state);
 };
 
 const stepFunctionTwo: InputStep<IMyState> = async (
@@ -42,8 +40,6 @@ const stepFunctionTwo: InputStep<IMyState> = async (
 			state.stepTwoText = typedValue;
 		},
 	});
-
-	return (input) => stepFunctionThree(input, state);
 };
 
 const stepFunctionThree: InputStep<IMyState> = async (
@@ -66,8 +62,6 @@ const stepFunctionThree: InputStep<IMyState> = async (
 			state.stepThreePick = pickedValue;
 		},
 	});
-
-	return (input) => stepFunctionFour(input, state);
 };
 
 const stepFunctionFour: InputStep<IMyState> = async (
@@ -89,15 +83,12 @@ const stepFunctionFour: InputStep<IMyState> = async (
 	});
 };
 
-// Define the entrypoint, the initial funciton to call
-const initialFunction: InputStep<IMyState> = stepFunctionOne;
-
-// Ordered list of step initial texts
-const steps: string[] = [
-	'Step 1 Initial Text',
-	'Step 2 Initial Text',
-	'',
-	'Step 4 Initial Text',
+// Ordered list of step functions that build the chain of steps for the multi step input dialog
+const steps: InputStep<IMyState>[] = [
+	stepFunctionOne,
+	stepFunctionTwo,
+	stepFunctionThree,
+	stepFunctionFour,
 ];
 
 interface IMyState extends IStateBase {
@@ -112,10 +103,10 @@ export async function wrapper() {
 		dialogTitle: 'Example Dialog Generics',
 		currentStep: -1,
 		totalSteps: steps.length,
-		stepOneText: steps[0],
-		stepTwoText: steps[1],
-		stepThreePick: { label: steps[2] },
-		stepFourText: steps[3],
+		stepOneText: 'Step 1 Initial Text',
+		stepTwoText: 'Step 2 Initial Text',
+		stepThreePick: { label: '' },
+		stepFourText: 'Step 4 Initial Text',
 	};
-	createMultiStepInputGeneric(myState, initialFunction);
+	createMultiStepInputGeneric(myState, steps);
 }

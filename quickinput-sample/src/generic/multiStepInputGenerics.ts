@@ -47,8 +47,9 @@ export class MultiStepInput<T extends IStateBase> {
 	private current?: QuickInput;
 	private steps: InputStep<T>[] = [];
 
-	async stepThrough(start: InputStep<T>, state: T) {
-		let step: InputStep<T> | void = start;
+	async stepThrough(steps: InputStep<T>[], state: T) {
+		let stepIndex = 0;
+		let step: InputStep<T> | void = steps[stepIndex];
 		while (step) {
 			this.steps.push(step);
 			if (this.current) {
@@ -56,13 +57,16 @@ export class MultiStepInput<T extends IStateBase> {
 				this.current.busy = true;
 			}
 			try {
-				step = await step(this, state);
+				await step(this, state);
+				stepIndex++;
+				step = steps[stepIndex];
 				state.currentStep++;
 			} catch (err) {
 				if (err === InputFlowAction.back) {
 					state.currentStep--;
 					this.steps.pop();
-					step = this.steps.pop();
+					stepIndex = Math.max(0, stepIndex - 1);
+					step = steps[stepIndex];
 				} else if (err === InputFlowAction.cancel) {
 					throw err;
 				} else {
@@ -198,11 +202,11 @@ export class MultiStepInput<T extends IStateBase> {
 
 export async function createMultiStepInputGeneric<T extends IStateBase>(
 	state: T,
-	initFunction: InputStep<T>,
+	steps: InputStep<T>[],
 ): Promise<void> {
 	state.currentStep = 1;
 	const input = new MultiStepInput<T>();
-	await input.stepThrough(initFunction, state);
+	await input.stepThrough(steps, state);
 	window.showInformationMessage(
 		`All steps completed! Final state: ${JSON.stringify(state)}`,
 	);
